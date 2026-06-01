@@ -1,0 +1,1430 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Livro - Editor de Textos</title>
+    
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#f9f9fb">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Livro">
+    <link rel="apple-touch-icon" href="android/launchericon-192x192.png">
+
+    <style>
+        /* --- VARIÁVEIS DE DESIGN PREMIUM --- */
+        :root {
+            --bg-app: #f9f9fb;
+            --bg-panel: #ffffff;
+            --bg-lane: #f2f2f7; 
+            --bg-hover: #e5e5ea;
+            --text-main: #1d1d1f;
+            --text-secondary: #86868b;
+            --accent: #0066cc;
+            --accent-hover: #005bb5;
+            --danger: #ff3b30;
+            --border: #e5e5ea;
+            --shadow-sm: 0 1px 4px rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 10px 30px rgba(0, 0, 0, 0.08);
+            --radius-sm: 8px;
+            --radius-md: 14px;
+            --radius-lg: 20px;
+            --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            --font-serif: "Iowan Old Style", "Apple Garamond", Baskerville, "Times New Roman", "Droid Serif", Times, serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: var(--font-ui);
+            background-color: var(--bg-app);
+            color: var(--text-main);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* --- BOTÃO SANDUÍCHE (HAMBURGER) --- */
+        .btn-hamburger {
+            background: transparent;
+            border: none;
+            color: var(--text-main);
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+            line-height: 1;
+        }
+
+        .btn-hamburger:hover {
+            background-color: var(--bg-hover);
+        }
+
+        /* --- OVERLAY DO MENU LATERAL --- */
+        .sidebar-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(2px);
+            z-index: 99;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .sidebar-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        /* --- MENU LATERAL (SIDEBAR RETRÁTIL) --- */
+        #app-sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            width: 300px;
+            background-color: var(--bg-panel);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            padding: 30px 20px;
+            z-index: 100;
+            transform: translateX(-100%);
+            transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            box-shadow: var(--shadow-md);
+        }
+
+        #app-sidebar.active {
+            transform: translateX(0);
+        }
+
+        .sidebar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding: 0 12px;
+        }
+
+        .brand-logo {
+            font-size: 1.4rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-close-sidebar {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-close-sidebar:hover {
+            background-color: var(--bg-hover);
+            color: var(--danger);
+        }
+
+        .nav-section {
+            margin-bottom: 24px;
+        }
+
+        .nav-section-title {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            font-weight: 700;
+            color: var(--text-secondary);
+            letter-spacing: 0.8px;
+            padding: 0 12px;
+            margin-bottom: 12px;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            padding: 12px 14px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            color: var(--text-main);
+            font-weight: 500;
+            font-size: 0.95rem;
+            transition: all 0.2s;
+            border: none;
+            background: transparent;
+            text-align: left;
+            gap: 12px;
+        }
+
+        .nav-item:hover {
+            background-color: rgba(0, 0, 0, 0.04);
+        }
+
+        .nav-item.active {
+            background-color: rgba(0, 102, 204, 0.08);
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+        .divider {
+            height: 1px;
+            background-color: var(--border);
+            margin: 16px 0;
+        }
+
+        /* --- ÁREA PRINCIPAL --- */
+        #main-canvas {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            background-color: var(--bg-app);
+            overflow: hidden;
+            width: 100%;
+        }
+
+        .view-layer {
+            display: none;
+            width: 100%;
+            height: 100%;
+            flex-direction: column;
+        }
+
+        .view-layer.active {
+            display: flex;
+        }
+
+        /* --- COMPONENTES GERAIS --- */
+        .header-bar {
+            height: 75px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 30px;
+            background-color: var(--bg-app);
+            flex-shrink: 0;
+            gap: 20px;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .header-title {
+            font-size: 1.4rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        .btn-primary {
+            background-color: var(--accent);
+            color: white;
+            border: none;
+            padding: 10px 22px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 12px rgba(0, 102, 204, 0.25);
+        }
+
+        .btn-primary:hover {
+            background-color: var(--accent-hover);
+            transform: translateY(-1px);
+        }
+
+        .btn-ghost {
+            background-color: transparent;
+            color: var(--text-secondary);
+            border: 1px solid var(--border);
+            padding: 8px 18px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-ghost:hover {
+            color: var(--text-main);
+            border-color: var(--text-main);
+            background-color: var(--bg-panel);
+        }
+
+        /* --- KANBAN (QUADRO DE IDEIAS - GRID RESPONSIVO) --- */
+        .kanban-scroll-area {
+            flex: 1;
+            padding: 20px 40px;
+            overflow-x: hidden;
+            overflow-y: auto; 
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 24px;
+            align-items: start;
+            align-content: start;
+        }
+
+        .kanban-lane {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            background-color: var(--bg-lane);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 16px;
+            max-height: 70vh; 
+        }
+
+        .lane-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            padding: 0 4px;
+        }
+
+        .lane-title-input {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--text-main);
+            background: transparent;
+            border: 1px solid transparent;
+            outline: none;
+            width: 80%;
+            padding: 6px 8px;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+
+        .lane-title-input:focus {
+            background-color: var(--bg-panel);
+            border-color: var(--accent);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .btn-delete-lane {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 1.4rem;
+            line-height: 1;
+            opacity: 0.6;
+            transition: all 0.2s;
+            padding: 4px;
+            border-radius: 4px;
+        }
+
+        .btn-delete-lane:hover {
+            color: var(--danger);
+            background-color: rgba(255, 59, 48, 0.1);
+            opacity: 1;
+        }
+
+        .lane-cards-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            overflow-y: auto;
+            padding-bottom: 10px;
+            min-height: 80px;
+        }
+
+        .idea-card-modern {
+            background-color: var(--bg-panel);
+            border: 1px solid rgba(0,0,0,0.05);
+            border-radius: var(--radius-sm);
+            padding: 16px;
+            box-shadow: var(--shadow-sm);
+            cursor: grab;
+            position: relative;
+            transition: box-shadow 0.2s, transform 0.2s;
+        }
+
+        .idea-card-modern:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+
+        .idea-card-modern:active {
+            cursor: grabbing;
+            transform: scale(0.98);
+        }
+
+        .card-textarea {
+            width: 100%;
+            background: transparent;
+            border: none;
+            resize: none;
+            font-family: var(--font-ui);
+            font-size: 0.95rem;
+            color: var(--text-main);
+            line-height: 1.5;
+            outline: none;
+        }
+
+        .btn-delete-card-floating {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background-color: var(--bg-hover);
+            color: var(--text-secondary);
+            border: none;
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            opacity: 0;
+            transition: all 0.2s;
+            font-size: 1rem;
+            font-weight: bold;
+        }
+
+        .idea-card-modern:hover .btn-delete-card-floating {
+            opacity: 1;
+        }
+
+        .btn-delete-card-floating:hover {
+            background-color: var(--danger);
+            color: white;
+        }
+
+        .btn-add-card-ghost {
+            margin-top: 8px;
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-align: left;
+            padding: 10px 12px;
+            cursor: pointer;
+            border-radius: var(--radius-sm);
+            transition: all 0.2s;
+        }
+
+        .btn-add-card-ghost:hover {
+            background-color: rgba(0,0,0,0.05);
+            color: var(--text-main);
+        }
+
+        /* --- BIBLIOTECA (MEUS LIVROS) --- */
+        .library-grid {
+            padding: 20px 40px;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 24px;
+            overflow-y: auto;
+        }
+
+        .book-card {
+            background-color: var(--bg-panel);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            cursor: pointer;
+            box-shadow: var(--shadow-sm);
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+
+        .book-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-md);
+            border-color: var(--accent);
+        }
+
+        .book-card-title {
+            font-size: 1.3rem;
+            font-weight: 800;
+            margin-bottom: 8px;
+            color: var(--text-main);
+        }
+
+        .book-card-meta {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-bottom: 24px;
+        }
+
+        .book-card-actions {
+            margin-top: auto;
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        /* --- EDITOR DE TEXTO COM LINHAS --- */
+        .editor-top-toolbar {
+            display: flex;
+            align-items: center;
+            padding: 10px 20px;
+            background-color: var(--bg-panel);
+            border-bottom: 1px solid var(--border);
+            gap: 15px;
+        }
+
+        .format-group {
+            display: flex;
+            gap: 4px;
+            background-color: var(--bg-app);
+            padding: 4px;
+            border-radius: 8px;
+            margin: 0 auto;
+        }
+
+        .format-btn {
+            background: transparent;
+            border: none;
+            width: 34px;
+            height: 34px;
+            border-radius: 6px;
+            cursor: pointer;
+            color: var(--text-main);
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        }
+
+        .format-btn:hover {
+            background-color: var(--bg-hover);
+        }
+
+        .editor-scroll-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 60px 20px 100px 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .editor-canvas {
+            width: 100%;
+            max-width: 760px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .editor-chapter-label {
+            font-family: var(--font-ui);
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-bottom: 8px;
+        }
+
+        .editor-title-input {
+            font-family: var(--font-ui);
+            font-size: 2.8rem;
+            font-weight: 800;
+            color: var(--text-main);
+            border: none;
+            background: transparent;
+            outline: none;
+            margin-bottom: 40px;
+            line-height: 1.2;
+            letter-spacing: -1px;
+            width: 100%;
+        }
+
+        .editor-content-area {
+            font-family: var(--font-serif);
+            font-size: 1.25rem;
+            line-height: 1.9;
+            color: #2c2c2e;
+            outline: none;
+            min-height: 50vh;
+            white-space: pre-wrap;
+            counter-reset: editor-line;
+            padding-left: 50px; 
+            position: relative;
+        }
+
+        .editor-content-area > * {
+            position: relative;
+            display: block;
+            min-height: 1.9em;
+        }
+
+        .editor-content-area > *::before {
+            counter-increment: editor-line;
+            content: counter(editor-line);
+            position: absolute;
+            left: -50px;
+            width: 35px;
+            text-align: right;
+            color: #c7c7cc;
+            font-size: 0.95rem;
+            font-family: var(--font-ui);
+            user-select: none;
+            pointer-events: none;
+        }
+
+        /* --- MODAL DO SISTEMA (Substitui TODOS os prompts e alerts) --- */
+        .modal-backdrop {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-backdrop.active {
+            display: flex;
+        }
+
+        .modal-dialog {
+            background-color: var(--bg-panel);
+            padding: 32px;
+            border-radius: var(--radius-lg);
+            width: 90%;
+            max-width: 420px;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.15);
+            text-align: center;
+        }
+
+        .modal-title {
+            font-size: 1.4rem;
+            font-weight: 800;
+            margin-bottom: 12px;
+            color: var(--text-main);
+        }
+
+        .modal-desc {
+            font-size: 1rem;
+            color: var(--text-secondary);
+            margin-bottom: 20px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+        }
+
+        .modal-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            margin-bottom: 24px;
+            font-family: var(--font-ui);
+            font-size: 1.05rem;
+            outline: none;
+            transition: border-color 0.2s;
+            text-align: center;
+            display: none;
+        }
+
+        .modal-input:focus {
+            border-color: var(--accent);
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+        }
+
+        .btn-modal-cancel {
+            padding: 12px 24px;
+            border-radius: 25px;
+            border: none;
+            background-color: var(--bg-lane);
+            color: var(--text-main);
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn-modal-cancel:hover {
+            background-color: var(--border);
+        }
+
+        .btn-modal-confirm {
+            padding: 12px 24px;
+            border-radius: 25px;
+            border: none;
+            background-color: var(--accent);
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0, 102, 204, 0.2);
+        }
+
+        .btn-modal-confirm.danger {
+            background-color: var(--danger);
+            box-shadow: 0 4px 12px rgba(255, 59, 48, 0.2);
+        }
+
+        .btn-modal-confirm:hover {
+            filter: brightness(0.9);
+        }
+
+        /* --- AJUSTES RESPONSIVOS (MOBILE) --- */
+        @media(max-width: 768px) {
+            .header-bar { padding: 0 20px; }
+            
+            .kanban-scroll-area { 
+                grid-template-columns: repeat(2, 1fr); 
+                padding: 15px 10px; 
+                gap: 12px; 
+            }
+            .kanban-lane { padding: 10px; }
+            .lane-title-input { font-size: 0.9rem; padding: 4px; }
+            .card-textarea { font-size: 0.85rem; }
+
+            .library-grid { padding: 20px; grid-template-columns: 1fr; }
+            .editor-scroll-area { padding: 30px 10px; }
+            .editor-title-input { font-size: 2.2rem; }
+            .editor-content-area { padding-left: 35px; }
+            .editor-content-area > *::before { left: -35px; width: 25px; font-size: 0.8rem; }
+            
+            .editor-top-toolbar { flex-wrap: wrap; justify-content: space-between; }
+            .format-group { margin: 0; order: 3; width: 100%; justify-content: center; margin-top: 10px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+    <aside id="app-sidebar">
+        <div class="sidebar-header">
+            <div class="brand-logo">✍️ Livro</div>
+            <button class="btn-close-sidebar" onclick="toggleSidebar()">&times;</button>
+        </div>
+
+        <div class="nav-section">
+            <div class="nav-section-title">Estúdio Geral</div>
+            <button class="nav-item active" id="nav-library" onclick="navigate('library')">📚 Meus Livros</button>
+            <button class="nav-item" id="nav-global-ideas" onclick="navigate('global-ideas')">💡 Ideias Globais</button>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="nav-section" id="book-context-nav" style="display: none;">
+            <div class="nav-section-title" id="sidebar-book-title">Livro Selecionado</div>
+            <button class="nav-item" id="nav-editor" onclick="navigate('editor')">📝 Editor de Texto</button>
+            <button class="nav-item" id="nav-book-ideas" onclick="navigate('book-ideas')">💡 Ideias do Livro</button>
+            
+            <div style="margin-top: 25px; padding: 0 12px;">
+                <div class="nav-section-title" style="padding:0; margin-bottom:8px;">Capítulos</div>
+                <div id="sidebar-chapter-list" style="display:flex; flex-direction:column; gap:4px; max-height: 250px; overflow-y:auto;">
+                    </div>
+                <button class="btn-add-card-ghost" style="margin-top:8px; width:100%;" onclick="createNewChapter()">+ Novo Capítulo</button>
+            </div>
+        </div>
+    </aside>
+
+    <main id="main-canvas">
+        
+        <div id="view-library" class="view-layer active">
+            <div class="header-bar">
+                <div class="header-left">
+                    <button class="btn-hamburger" onclick="toggleSidebar()">☰</button>
+                    <h2 class="header-title">Minha Biblioteca</h2>
+                </div>
+                <button class="btn-primary" onclick="requestNewBook()">+ Novo Livro</button>
+            </div>
+            <div class="library-grid" id="library-grid"></div>
+        </div>
+
+        <div id="view-global-ideas" class="view-layer">
+            <div class="header-bar">
+                <div class="header-left">
+                    <button class="btn-hamburger" onclick="toggleSidebar()">☰</button>
+                    <h2 class="header-title">Quadro de Ideias Geral</h2>
+                </div>
+                <button class="btn-ghost" onclick="requestNewColumn('global')">+ Nova Categoria</button>
+            </div>
+            <div class="kanban-scroll-area" id="kanban-global"></div>
+        </div>
+
+        <div id="view-book-ideas" class="view-layer">
+            <div class="header-bar">
+                <div class="header-left">
+                    <button class="btn-hamburger" onclick="toggleSidebar()">☰</button>
+                    <h2 class="header-title" id="book-ideas-header">Ideias do Livro</h2>
+                </div>
+                <button class="btn-ghost" onclick="requestNewColumn('local')">+ Nova Categoria</button>
+            </div>
+            <div class="kanban-scroll-area" id="kanban-local"></div>
+        </div>
+
+        <div id="view-editor" class="view-layer">
+            <div class="editor-top-toolbar">
+                <button class="btn-hamburger" onclick="toggleSidebar()">☰</button>
+                
+                <div class="format-group">
+                    <button class="format-btn" onclick="execFormat('bold')" title="Negrito"><b>B</b></button>
+                    <button class="format-btn" onclick="execFormat('italic')" title="Itálico"><i>I</i></button>
+                    <button class="format-btn" onclick="execFormat('underline')" title="Sublinhado"><u>U</u></button>
+                    <div style="width:1px; background:var(--border); margin:4px;"></div>
+                    <button class="format-btn" onclick="execFormat('justifyLeft')" title="Alinhar à Esquerda">⫷</button>
+                    <button class="format-btn" onclick="execFormat('justifyCenter')" title="Centralizar">≣</button>
+                    <button class="format-btn" onclick="execFormat('justifyRight')" title="Alinhar à Direita">⫸</button>
+                </div>
+                
+                <div style="display:flex; gap:10px;">
+                    <button class="btn-ghost" style="border:none;" onclick="requestMergeWithPrevious()" title="Mesclar com o capítulo anterior">🔗 Mesclar</button>
+                    <button class="btn-ghost" style="border:none; color:var(--accent);" onclick="requestSplitChapter()" title="Dividir capítulo por número da linha">✂️ Quebrar</button>
+                    <button class="btn-ghost" onclick="exportBook()">📥 Exportar</button>
+                </div>
+            </div>
+            
+            <div class="editor-scroll-area">
+                <div class="editor-canvas">
+                    <div class="editor-chapter-label" id="editor-chapter-label">CAPÍTULO X</div>
+                    <input type="text" id="editor-title" class="editor-title-input" placeholder="Nome do Capítulo (Ex: O despertar)" oninput="updateCurrentChapterTitle(this.value)">
+                    <div id="editor-body" class="editor-content-area" contenteditable="true" oninput="updateCurrentChapterContent()"></div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <div class="modal-backdrop" id="system-modal">
+        <div class="modal-dialog">
+            <h3 class="modal-title" id="modal-title">Atenção</h3>
+            <p class="modal-desc" id="modal-desc">Descrição da ação.</p>
+            <input type="text" id="modal-input" class="modal-input" placeholder="Digite aqui..." autocomplete="off">
+            <div class="modal-actions">
+                <button class="btn-modal-cancel" onclick="closeModal()">Cancelar</button>
+                <button class="btn-modal-confirm" id="modal-btn-confirm">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- REGISTRO DO SERVICE WORKER (PWA) ---
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js').then(reg => {
+                    console.log('Service Worker Registrado!', reg);
+                }).catch(err => console.log('Erro no Service Worker', err));
+            });
+        }
+
+        // --- ESTRUTURA DE DADOS LOCAL ---
+        let appState = {
+            activeBookId: null,
+            globalColumns: [
+                { id: "gcol-1", title: "Ideias Brutas", cards: [] },
+                { id: "gcol-2", title: "Possíveis Heróis", cards: [] }
+            ],
+            books: [
+                {
+                    id: "book-1",
+                    title: "O Senhor dos Códigos",
+                    currentChapterId: "cap-1",
+                    chapters: [
+                        { id: "cap-1", title: "", content: "<div><br></div>" }
+                    ],
+                    localColumns: [
+                        { id: "lcol-1", title: "Enredo Principal", cards: [] }
+                    ]
+                }
+            ]
+        };
+
+        // --- INICIALIZAÇÃO E MIGRAÇÃO ---
+        window.onload = function() {
+            const data = localStorage.getItem("livro_pwa_db_v1");
+            if (data) {
+                try {
+                    const parsed = JSON.parse(data);
+                    if(parsed.books) {
+                        appState = parsed;
+                        appState.books.forEach(b => {
+                            if(!b.localColumns) {
+                                b.localColumns = [{ id: "lcol-" + Date.now(), title: "Planejamento", cards: [] }];
+                            }
+                            b.chapters.forEach(ch => {
+                                if (ch.title && ch.title.toLowerCase().startsWith("capítulo")) {
+                                    ch.title = ch.title.replace(/capítulo\s*\d+(\s*:\s*)?/i, '').trim();
+                                }
+                                if (!ch.content.includes('<div') && !ch.content.includes('<p')) {
+                                    ch.content = `<div>${ch.content}</div>`;
+                                }
+                            });
+                        });
+                    }
+                } catch(e) {}
+            }
+            navigate('library');
+        };
+
+        function saveState() {
+            localStorage.setItem("livro_pwa_db_v1", JSON.stringify(appState));
+        }
+
+        // --- SISTEMA DE MODAL INTEGRADO (Substitui prompt e alert) ---
+        let activeModalCallback = null;
+
+        function openModal(title, desc, confirmCallback, showInput = false, inputType = 'text', inputPlaceholder = '', isDanger = false, isAlert = false) {
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-desc').innerText = desc;
+            
+            const inputEl = document.getElementById('modal-input');
+            if (showInput) {
+                inputEl.style.display = 'block';
+                inputEl.type = inputType;
+                inputEl.placeholder = inputPlaceholder;
+                inputEl.value = '';
+                setTimeout(() => inputEl.focus(), 100);
+            } else {
+                inputEl.style.display = 'none';
+            }
+            
+            const confirmBtn = document.getElementById('modal-btn-confirm');
+            const cancelBtn = document.querySelector('.btn-modal-cancel');
+            
+            if (isDanger) confirmBtn.classList.add('danger');
+            else confirmBtn.classList.remove('danger');
+
+            if (isAlert) {
+                cancelBtn.style.display = 'none';
+                confirmBtn.innerText = 'OK';
+            } else {
+                cancelBtn.style.display = 'block';
+                confirmBtn.innerText = 'Confirmar';
+            }
+
+            if(confirmCallback === null && !isAlert) {
+                confirmBtn.style.display = 'none';
+            } else {
+                confirmBtn.style.display = 'block';
+            }
+            
+            activeModalCallback = confirmCallback;
+            document.getElementById('system-modal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('system-modal').classList.remove('active');
+            activeModalCallback = null;
+        }
+
+        document.getElementById('modal-btn-confirm').onclick = () => {
+            if(activeModalCallback) {
+                const inputEl = document.getElementById('modal-input');
+                if (inputEl.style.display === 'block') {
+                    activeModalCallback(inputEl.value);
+                } else {
+                    activeModalCallback();
+                }
+            }
+            closeModal();
+        };
+
+        // --- CONTROLES GERAIS E NAVEGAÇÃO ---
+        function toggleSidebar() {
+            document.getElementById('app-sidebar').classList.toggle('active');
+            document.getElementById('sidebar-overlay').classList.toggle('active');
+        }
+
+        function navigate(viewId) {
+            document.querySelectorAll('.view-layer').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            
+            if (document.getElementById('app-sidebar').classList.contains('active')) {
+                toggleSidebar();
+            }
+            
+            if (viewId === 'library') {
+                document.getElementById('view-library').classList.add('active');
+                document.getElementById('nav-library').classList.add('active');
+                appState.activeBookId = null;
+                updateSidebarContext();
+                renderLibrary();
+            } 
+            else if (viewId === 'global-ideas') {
+                document.getElementById('view-global-ideas').classList.add('active');
+                document.getElementById('nav-global-ideas').classList.add('active');
+                updateSidebarContext();
+                renderKanban('global');
+            }
+            else if (viewId === 'editor') {
+                if(!appState.activeBookId) return navigate('library');
+                document.getElementById('view-editor').classList.add('active');
+                document.getElementById('nav-editor').classList.add('active');
+                loadEditor();
+            }
+            else if (viewId === 'book-ideas') {
+                if(!appState.activeBookId) return navigate('library');
+                document.getElementById('view-book-ideas').classList.add('active');
+                document.getElementById('nav-book-ideas').classList.add('active');
+                
+                const book = getActiveBook();
+                document.getElementById('book-ideas-header').innerText = `Ideias do Livro: ${book.title}`;
+                renderKanban('local');
+            }
+        }
+
+        function updateSidebarContext() {
+            const contextNav = document.getElementById('book-context-nav');
+            if (appState.activeBookId) {
+                contextNav.style.display = 'block';
+                const book = getActiveBook();
+                document.getElementById('sidebar-book-title').innerText = book.title;
+                renderSidebarChapterList();
+            } else {
+                contextNav.style.display = 'none';
+            }
+        }
+
+        function getActiveBook() {
+            return appState.books.find(b => b.id === appState.activeBookId);
+        }
+
+        // --- BIBLIOTECA & LIVROS ---
+        function renderLibrary() {
+            const grid = document.getElementById("library-grid");
+            grid.innerHTML = "";
+
+            appState.books.forEach(book => {
+                const card = document.createElement("div");
+                card.className = "book-card";
+                card.onclick = () => openBook(book.id);
+
+                card.innerHTML = `
+                    <div class="book-card-title">${book.title}</div>
+                    <div class="book-card-meta">${book.chapters.length} Capítulos na obra</div>
+                    <div class="book-card-actions">
+                        <button class="btn-ghost" style="border:none; color:var(--danger); padding:0;" onclick="event.stopPropagation(); requestDeleteBook('${book.id}')">Excluir Obra</button>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function requestNewBook() {
+            openModal("Novo Livro", "Qual o título da sua nova obra?", (title) => {
+                if (title && title.trim() !== "") {
+                    const newBook = {
+                        id: "book-" + Date.now(),
+                        title: title.trim(),
+                        currentChapterId: "cap-" + Date.now(),
+                        chapters: [{ id: "cap-" + Date.now(), title: "", content: "<div><br></div>" }],
+                        localColumns: [{ id: "lcol-" + Date.now(), title: "Planejamento Inicial", cards: [] }]
+                    };
+                    appState.books.push(newBook);
+                    saveState();
+                    renderLibrary();
+                }
+            }, true, 'text', 'Ex: O Enigma da Esfinge');
+        }
+
+        function requestDeleteBook(bookId) {
+            openModal("Excluir Livro", "Esta ação apagará permanentemente o livro inteiro, todos os seus capítulos e as ideias dele. Não há como desfazer.", () => {
+                appState.books = appState.books.filter(b => b.id !== bookId);
+                saveState();
+                renderLibrary();
+            }, false, 'text', '', true); // isDanger = true
+        }
+
+        function openBook(bookId) {
+            appState.activeBookId = bookId;
+            updateSidebarContext();
+            navigate('editor');
+        }
+
+        // --- SIDEBAR (LISTA DE CAPÍTULOS DINÂMICA) ---
+        function renderSidebarChapterList() {
+            const book = getActiveBook();
+            if(!book) return;
+            const container = document.getElementById("sidebar-chapter-list");
+            container.innerHTML = "";
+
+            book.chapters.forEach((ch, idx) => {
+                const btn = document.createElement("button");
+                btn.className = `btn-add-card-ghost ${ch.id === book.currentChapterId ? 'active' : ''}`;
+                btn.style.width = "100%";
+                
+                if (ch.id === book.currentChapterId) {
+                    btn.style.color = "var(--accent)";
+                    btn.style.backgroundColor = "rgba(0, 102, 204, 0.08)";
+                }
+                
+                const displayTitle = ch.title ? `Capítulo ${idx + 1}: ${ch.title}` : `Capítulo ${idx + 1}`;
+                btn.innerText = displayTitle;
+                
+                btn.onclick = () => {
+                    book.currentChapterId = ch.id;
+                    saveState();
+                    renderSidebarChapterList();
+                    if(document.getElementById('view-editor').classList.contains('active')) {
+                        loadEditor();
+                    } else {
+                        navigate('editor');
+                    }
+                };
+                container.appendChild(btn);
+            });
+        }
+
+        function createNewChapter() {
+            const book = getActiveBook();
+            if(!book) return;
+            const newId = "cap-" + Date.now();
+            book.chapters.push({ id: newId, title: "", content: "<div><br></div>" });
+            book.currentChapterId = newId;
+            saveState();
+            renderSidebarChapterList();
+            navigate('editor');
+        }
+
+        // --- ENGINE DO EDITOR DE TEXTO E LINHAS ---
+        function execFormat(cmd) {
+            document.execCommand(cmd, false, null);
+            document.getElementById('editor-body').focus();
+        }
+
+        function sanitizeEditorContent() {
+            const editor = document.getElementById('editor-body');
+            let hasChanges = false;
+            
+            Array.from(editor.childNodes).forEach(node => {
+                if (node.nodeType === Node.TEXT_NODE && node.textContent.trim() !== "") {
+                    const div = document.createElement('div');
+                    div.textContent = node.textContent;
+                    editor.replaceChild(div, node);
+                    hasChanges = true;
+                }
+            });
+            if (editor.children.length === 0) {
+                editor.innerHTML = "<div><br></div>";
+                hasChanges = true;
+            }
+            return hasChanges;
+        }
+
+        function loadEditor() {
+            const book = getActiveBook();
+            if(!book) return;
+            
+            const currentIdx = book.chapters.findIndex(c => c.id === book.currentChapterId);
+            const chapter = book.chapters[currentIdx];
+            
+            if (chapter) {
+                document.getElementById('editor-chapter-label').innerText = `CAPÍTULO ${currentIdx + 1}`;
+                document.getElementById('editor-title').value = chapter.title;
+                document.getElementById('editor-body').innerHTML = chapter.content;
+                
+                document.execCommand("defaultParagraphSeparator", false, "div");
+                sanitizeEditorContent();
+            }
+        }
+
+        function updateCurrentChapterTitle(val) {
+            const book = getActiveBook();
+            const chapter = book.chapters.find(c => c.id === book.currentChapterId);
+            if (chapter) {
+                chapter.title = val;
+                saveState();
+                renderSidebarChapterList();
+            }
+        }
+
+        function updateCurrentChapterContent() {
+            const book = getActiveBook();
+            const chapter = book.chapters.find(c => c.id === book.currentChapterId);
+            if (chapter) {
+                sanitizeEditorContent();
+                chapter.content = document.getElementById('editor-body').innerHTML;
+                saveState();
+            }
+        }
+
+        function getEditorLines() {
+            sanitizeEditorContent();
+            const editor = document.getElementById('editor-body');
+            return Array.from(editor.children);
+        }
+
+        // --- DIVISÃO POR NÚMERO DE LINHA COM MODAL ---
+        function requestSplitChapter() {
+            const lines = getEditorLines();
+            
+            if (lines.length <= 1) {
+                openModal("Ação Inválida", "O capítulo atual não possui linhas suficientes para ser dividido.", () => {}, false, 'text', '', false, true); // Modal estilo Alert
+                return;
+            }
+
+            openModal(
+                "Quebrar Capítulo", 
+                `O capítulo atual possui ${lines.length} linhas.\nDigite o número da linha que será a ÚLTIMA deste capítulo. Todo o texto abaixo dela iniciará o próximo capítulo.`, 
+                (val) => {
+                    const splitLine = parseInt(val);
+                    if (isNaN(splitLine) || splitLine < 1 || splitLine >= lines.length) {
+                        openModal("Erro", "Número de linha inválido ou fora dos limites do texto.", () => {}, false, 'text', '', true, true);
+                        return;
+                    }
+                    
+                    const contentBefore = lines.slice(0, splitLine).map(el => el.outerHTML).join('');
+                    const contentAfter = lines.slice(splitLine).map(el => el.outerHTML).join('');
+
+                    const book = getActiveBook();
+                    const currentIdx = book.chapters.findIndex(c => c.id === book.currentChapterId);
+                    
+                    book.chapters[currentIdx].content = contentBefore;
+                    
+                    const nextId = "cap-" + Date.now();
+                    book.chapters.splice(currentIdx + 1, 0, {
+                        id: nextId,
+                        title: "", 
+                        content: contentAfter
+                    });
+                    
+                    book.currentChapterId = nextId;
+                    saveState();
+                    renderSidebarChapterList();
+                    loadEditor();
+                }, 
+                true, 'number', 'Ex: 15' 
+            );
+        }
+
+        function requestMergeWithPrevious() {
+            const book = getActiveBook();
+            if(!book) return;
+            
+            const currentIdx = book.chapters.findIndex(c => c.id === book.currentChapterId);
+            
+            if (currentIdx === 0) {
+                openModal("Aviso", "Este é o primeiro capítulo da sua obra. Não existe capítulo anterior para fundir o texto.", () => {}, false, 'text', '', false, true);
+                return;
+            }
+
+            openModal("Mesclar com Anterior", "Deseja colar o texto deste capítulo no final do capítulo anterior? O capítulo atual será apagado da lista.", () => {
+                const prevChapter = book.chapters[currentIdx - 1];
+                const currChapter = book.chapters[currentIdx];
+                
+                prevChapter.content = prevChapter.content + "<div><br></div>" + currChapter.content;
+                book.chapters.splice(currentIdx, 1);
+                
+                book.currentChapterId = prevChapter.id;
+                saveState();
+                renderSidebarChapterList();
+                loadEditor();
+            }, false, 'text', '', true);
+        }
+
+        function exportBook() {
+            const book = getActiveBook();
+            if(!book) return;
+            let output = `=== ${book.title.toUpperCase()} ===\n\n`;
+            
+            book.chapters.forEach((ch, i) => {
+                const displayTitle = ch.title ? `CAPÍTULO ${i + 1}: ${ch.title.toUpperCase()}` : `CAPÍTULO ${i + 1}`;
+                const text = ch.content
+                                .replace(/<div>/gi, '\n')
+                                .replace(/<\/div>/gi, '')
+                                .replace(/<br\s*\/?>/gi, '\n')
+                                .replace(/<[^>]+>/g, '');
+                
+                output += `\n--------------------------------------------------\n`;
+                output += displayTitle;
+                output += `\n--------------------------------------------------\n\n`;
+                output += `${text.trim()}\n\n`;
+            });
+            
+            const blob = new Blob([output], { type: "text/plain;charset=utf-8" });
+            const downloader = document.createElement("a");
+            downloader.href = URL.createObjectURL(blob);
+            downloader.download = `Manuscrito_${book.title.replace(/\s+/g, '_')}.txt`;
+            downloader.click();
+        }
+
+        // --- SISTEMA KANBAN RESPONSIVO ---
+        function getKanbanColumns(type) {
+            if (type === 'global') return appState.globalColumns;
+            if (type === 'local') return getActiveBook().localColumns;
+            return [];
+        }
+
+        function renderKanban(type) {
+            const columns = getKanbanColumns(type);
+            const containerId = type === 'global' ? 'kanban-global' : 'kanban-local';
+            const board = document.getElementById(containerId);
+            board.innerHTML = "";
+
+            columns.forEach(col => {
+                const lane = document.createElement("div");
+                lane.className = "kanban-lane";
+                lane.dataset.id = col.id;
+                lane.dataset.type = type;
+
+                const header = document.createElement("div");
+                header.className = "lane-header";
+                
+                const input = document.createElement("input");
+                input.className = "lane-title-input";
+                input.value = col.title;
+                input.onchange = (e) => { col.title = e.target.value; saveState(); };
+
+                const delBtn = document.createElement("button");
+                delBtn.className = "btn-delete-lane";
+                delBtn.innerHTML = "&times;";
+                delBtn.title = "Apagar Coluna";
+                delBtn.onclick = () => requestRemoveColumn(type, col.id);
+
+                header.appendChild(input);
+                header.appendChild(delBtn);
+                lane.appendChild(header);
+
+                const cardList = document.createElement("div");
+                cardList.className = "lane-cards-container";
+                cardList.ondragover = allowDrop;
+                cardList.ondrop = dropCard;
+                cardList.dataset.colId = col.id;
+                cardList.dataset.type = type;
+
+                col.cards.forEach(card => {
+                    const cardEl = document.createElement("div");
+                    cardEl.className = "idea-card-modern";
+                    cardEl.draggable = true;
+                    cardEl.ondragstart = dragCard;
+                    cardEl.dataset.cardId = card.id;
+
+                    const txt = document.createElement("textarea");
+                    txt.className = "card-textarea";
+                    txt.value = card.text;
+                    txt.placeholder = "Descreva sua ideia...";
+                    txt.rows = 3;
+                    txt.oninput = (e) => { card.text = e.target.value; saveState(); };
+
+                    const delCardBtn = document.createElement("button");
+                    delCardBtn.className = "btn-delete-card-floating";
+                    delCardBtn.innerHTML = "&times;";
+                    delCardBtn.onclick = () => removeKanbanCard(type, col.id, card.id);
+
+                    cardEl.appendChild(txt);
+                    cardEl.appendChild(delCardBtn);
+                    cardList.appendChild(cardEl);
+                });
+
+                lane.appendChild(cardList);
+
+                const addBtn = document.createElement("button");
+                addBtn.className = "btn-add-card-ghost";
+                addBtn.innerText = "+ Adicionar Cartão";
+                addBtn.onclick = () => addKanbanCard(type, col.id);
+                lane.appendChild(addBtn);
+
+                board.appendChild(lane);
+            });
+        }
+
+        function requestNewColumn(type) {
+            openModal("Nova Categoria", "Digite o nome da nova categoria de ideias:", (title) => {
+                if (title && title.trim() !== "") {
+                    const cols = getKanbanColumns(type);
+                    cols.push({ id: "col-" + Date.now(), title: title.trim(), cards: [] });
+                    saveState();
+                    renderKanban(type);
+                }
+            }, true, 'text', 'Ex: Cenários');
+        }
+
+        function requestRemoveColumn(type, colId) {
+            openModal("Deletar Categoria", "Você tem certeza que deseja excluir esta coluna e todos os cartões que estão dentro dela?", () => {
+                if(type === 'global') {
+                    appState.globalColumns = appState.globalColumns.filter(c => c.id !== colId);
+                } else {
+                    const book = getActiveBook();
+                    book.localColumns = book.localColumns.filter(c => c.id !== colId);
+                }
+                saveState();
+                renderKanban(type);
+            }, false, 'text', '', true);
+        }
+
+        function addKanbanCard(type, colId) {
+            const cols = getKanbanColumns(type);
+            const col = cols.find(c => c.id === colId);
+            if (col) {
+                col.cards.push({ id: "card-" + Date.now(), text: "" });
+                saveState();
+                renderKanban(type);
+            }
+        }
+
+        function removeKanbanCard(type, colId, cardId) {
+            const cols = getKanbanColumns(type);
+            const col = cols.find(c => c.id === colId);
+            if (col) {
+                col.cards = col.cards.filter(c => c.id !== cardId);
+                saveState();
+                renderKanban(type);
+            }
+        }
+
+        // --- SISTEMA DE DRAG & DROP DO KANBAN ---
+        let dragInfo = { cardId: null, colId: null, type: null };
+
+        function dragCard(e) {
+            dragInfo.cardId = e.target.dataset.cardId;
+            dragInfo.colId = e.target.closest('.lane-cards-container').dataset.colId;
+            dragInfo.type = e.target.closest('.lane-cards-container').dataset.type;
+        }
+
+        function allowDrop(e) { e.preventDefault(); }
+
+        function dropCard(e) {
+            e.preventDefault();
+            const targetList = e.target.closest('.lane-cards-container');
+            if (!targetList) return;
+            
+            const targetColId = targetList.dataset.colId;
+            const targetType = targetList.dataset.type;
+
+            if (dragInfo.type !== targetType) return;
+
+            if (dragInfo.cardId && dragInfo.colId && targetColId) {
+                const cols = getKanbanColumns(targetType);
+                const srcCol = cols.find(c => c.id === dragInfo.colId);
+                const tgtCol = cols.find(c => c.id === targetColId);
+                
+                const cardObj = srcCol.cards.find(c => c.id === dragInfo.cardId);
+                srcCol.cards = srcCol.cards.filter(c => c.id !== dragInfo.cardId);
+                tgtCol.cards.push(cardObj);
+                
+                saveState();
+                renderKanban(targetType);
+            }
+        }
+    </script>
+</body>
+</html>
